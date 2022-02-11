@@ -17,14 +17,12 @@ const int PWMB = 6;
 const int WheelPin = 13;
 const int GrabPin = 5;
 const int TiltPin = 4;
-const int THERMISTOR_PIN;
-const int LED_PIN;
 
 //コマンドキーの定義
 const char AUTO_MODE = '!';
 const char W = 'w'; //前進
 const char S = 's'; //後進
-const char X = 'x'; //ブレーキrg
+const char X = 'x'; //ブレーキ
 const char A = 'a'; //左にサーボモータ(前輪)を回転
 const char D = 'd'; //右にサーボモータ(前輪)を回転
 const char N = 'n'; //サーボモータ(前輪)の角度を0に戻す
@@ -34,7 +32,6 @@ const char UP = 'i'; //アームを上げる
 const char DOWN = 'k'; //アームを下げる
 
 char command;
-float tmp;
 
 //スピードの定義
 const int SPEED_FORWARD = 100;
@@ -46,9 +43,6 @@ int grab_angle = 0;
 int release_angle = 180;
 int up_angle = 180;
 int down_angle = 0;
-
-//温度のしきい値の定義
-const int TMP_THRESHOLD = 0;
 
 void setup() {
   bluetooth.begin(115200);
@@ -64,71 +58,44 @@ void setup() {
   pinMode(BIN2,OUTPUT);
   pinMode(PWMA,OUTPUT);
   pinMode(PWMB,OUTPUT);
-  pinMode(THERMISTOR_PIN, INPUT);
-  pinMode(LED_PIN, OUTPUT);
 }
-
 
 void loop() {
   if (bluetooth.available() > 0) {
     command = bluetooth.read();
     bluetooth.flush();
-    if (command == AUTO_MODE) {
-      loop_auto();
-    } else {
-      loop_remote(command);
+    if (command == A) {
+      // 左にサーボモータ(前輪)を回転
+      rotate_left();
+    } else if (command == D) {
+      // 左にサーボモータ(前輪)を回転
+      rotate_right();
+    } else if (command == N) {
+      // ニュートラル
+      wheel_neutral();
+    } else if (command == W) {
+      // 前進
+      forward(SPEED_FORWARD, SPEED_FORWARD);
+    } else if (command == S) {
+      // 後進
+      back(SPEED_BACK, SPEED_BACK);
+    } else if (command == X) {
+      // ブレーキ
+      brake();
+    } else if (command == GRAB) {
+      // 掴む
+      grab();
+    } else if (command == RELEASE) {
+      // 放す
+      release();
+    } else if (command == UP) {
+      // アームを上に傾ける
+      raise();
+    } else if (command == DOWN) {
+      // アームを下に傾ける
+      lower();
     }
   } 
-}
-
-
-//========================================================================
-
-//自律用のループ関数
-void loop_auto() {
-  
-}
-
-
-
-
-
-//========================================================================
-
-//遠隔用のループ関数
-void loop_remote(char command) {
-  if (command == A) {
-//      左にサーボモータ(前輪)を回転
-    rotate_left();
-  } else if (command == D) {
-//      左にサーボモータ(前輪)を回転
-    rotate_right();
-  } else if (command == N) {
-//      ニュートラル
-    wheel_neutral();
-  } else if (command == W) {
-//      前進
-    forward(SPEED_FORWARD, SPEED_FORWARD);
-  } else if (command == S) {
-//      後進
-    back(SPEED_BACK, SPEED_BACK);
-  } else if (command == X) {
-//      ブレーキ
-    brake();
-  } else if (command == GRAB) {
-//      掴む
-    grab();
-  } else if (command == RELEASE) {
-//      放す
-    release();
-  } else if (command == UP) {
-//      アームを上に傾ける
-    raise();
-  } else if (command == DOWN) {
-//      アームを下に傾ける
-    lower();
-  }
-  check_temperature();
 }
 
 //直進する
@@ -203,12 +170,4 @@ void raise() {
 //アームの角度を下降させる
 void lower() {
   tilt_servo.write(down_angle);
-}
-
-void check_temperature(float tmp) {
-  if (tmp > TMP_THRESHOLD) {
-    digitalWrite(LED_PIN, HIGH);
-  } else {
-    digitalWrite(LED_PIN, LOW);
-  }
 }
